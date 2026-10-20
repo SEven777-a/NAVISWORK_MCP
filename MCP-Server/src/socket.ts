@@ -101,7 +101,10 @@ export class NavisSocketClient {
     const requestId = this.generateRequestId();
     const cmd: NavisCommand = {
       command,
-      parameters: this.toPascalCase(parameters),
+      // 參數鍵維持 camelCase：C# 端 CommandExecutor 以 parameters["groupBy"] 這類
+      // camelCase 鍵讀取，而 Dictionary 查找是大小寫敏感的，轉成 PascalCase 會全部對不到，
+      // 導致所有參數被忽略而靜默套用預設值。
+      parameters,
       requestId,
     };
 
@@ -139,15 +142,4 @@ export class NavisSocketClient {
     return `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
   }
 
-  /** 將 camelCase key 轉換為 PascalCase，以配合 C# 習慣 */
-  private toPascalCase(
-    obj: Record<string, unknown>
-  ): Record<string, unknown> {
-    const result: Record<string, unknown> = {};
-    for (const [key, value] of Object.entries(obj)) {
-      const pascalKey = key.charAt(0).toUpperCase() + key.slice(1);
-      result[pascalKey] = value;
-    }
-    return result;
-  }
 }
