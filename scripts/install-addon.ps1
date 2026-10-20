@@ -1,8 +1,8 @@
-# NavisworksMCP Add-in 安裝腳本
+﻿# NavisworksMCP Add-in 安裝腳本
 # 將編譯好的 DLL 複製到 Navisworks Plugins 資料夾
 
 param(
-    [string]$NavisworksVersion = "2025",
+    [string]$NavisworksVersion = "2020",
     [string]$NavisworksPath = ""
 )
 

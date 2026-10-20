@@ -12,7 +12,7 @@
 
   <!-- Navisworks installation path -->
   <PropertyGroup>
-    <NavisworksPath>C:\Program Files\Autodesk\Navisworks Manage 2025</NavisworksPath>
+    <NavisworksPath>C:\Program Files\Autodesk\Navisworks Manage 2020</NavisworksPath>
   </PropertyGroup>
 
   <!-- NuGet packages -->

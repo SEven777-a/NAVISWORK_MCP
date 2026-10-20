@@ -18,6 +18,12 @@ namespace NavisworksMCP
         private static SocketService _socketService;
         private static bool _idleRegistered;
 
+        static ToggleServicePlugin()
+        {
+            // 必須在任何 Newtonsoft.Json 型別被使用前註冊（見 AssemblyResolver 說明）
+            AssemblyResolver.Register();
+        }
+
         public static SocketService SocketService => _socketService;
 
         public override int Execute(params string[] parameters)
@@ -139,6 +145,8 @@ namespace NavisworksMCP
     {
         public override void OnLoaded()
         {
+            // EventWatcher 在 Navisworks 啟動時就載入，是最早的註冊時機
+            AssemblyResolver.Register();
             Logger.Info("NavisworksMCP EventWatcher 已載入");
         }
 
