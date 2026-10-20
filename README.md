@@ -29,7 +29,7 @@ AI 驅動的 Navisworks 自動化控制系統
 
 | 項目 | 版本 |
 |------|------|
-| Navisworks Manage | 2025 |
+| Navisworks Manage | 2020 |
 | .NET Framework | 4.8 |
 | Node.js | 20+ LTS |
 | Visual Studio | 2019+ |
@@ -50,7 +50,7 @@ powershell -ExecutionPolicy Bypass -File scripts\install-addon.ps1
 
 ### 啟動服務
 
-1. 開啟 Navisworks Manage 2025
+1. 開啟 Navisworks Manage 2020
 2. 載入你的 NWF/NWD 模型
 3. 在 **Add-ins** 面板找到 **"MCP 服務 (開/關)"** 按鈕，點擊啟動
 4. 看到提示 `WebSocket 端口: 2233` 即表示服務就緒
@@ -359,8 +359,14 @@ NV_mcp/
 
 - WebSocket 端口固定為 **2233**，可透過環境變數 `NAVIS_MCP_PORT` 調整
 - 所有命令在 Navisworks **主執行緒**中序列化執行，不會有並發衝突
-- Plugin DLL 部署到 `C:\Program Files\Autodesk\Navisworks Manage 2025\Plugins\NavisworksMCP\`
+- Plugin DLL 部署到 `C:\Program Files\Autodesk\Navisworks Manage 2020\Plugins\NavisworksMCP\`
 - 日誌存放在 `%APPDATA%\NavisworksMCP\Logs\`
+- **中文版 Navisworks 的屬性分類名是中文**：實測為 `元素`、`元素 ID`、`項目`、`專案`、
+  `轉換`、`外部參考`、`TimeLiner`。本文件範例中的 `Element`、`Item` 需替換為對應中文，
+  否則 `search_items` 搜不到結果。先用 `get_all_categories` 確認實際名稱
+- `get_model_statistics` 等統計工具有寫死的掃描上限（10,000 / 5,000 項），
+  回傳的 `totalItems` 為截斷值，不等於模型實際數量
+- 開發除錯過程與版本相容性陷阱記錄在 [AGENTS.md](AGENTS.md)
 
 ## 授權
 

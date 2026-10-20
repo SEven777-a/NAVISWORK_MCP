@@ -11,7 +11,7 @@ AI 平台 ←→ MCP Server (Node.js, stdio) ←→ WebSocket (port 2233) ←→
 ## 開發規則
 
 - WebSocket 端口固定為 **2233**
-- C# 專案目標 .NET Framework 4.8，Navisworks 2025
+- C# 專案目標 .NET Framework 4.8，Navisworks 2020
 - Navisworks API 引用的 Copy Local 必須設為 False
 - 命令在 Navisworks 主執行緒中透過 Timer polling 執行
 - MCP Server 使用 stdio transport
@@ -73,7 +73,7 @@ MCP-Server/             # Node.js MCP Server
 - `get_clash_tests` / `get_clash_results`
 - `get_model_statistics`
 
-## Navisworks 2025 API 注意事項
+## Navisworks API 注意事項（本機環境：Manage 2020）
 
 - 無 `Autodesk.Navisworks.Gui.dll`
 - `Count` 是 LINQ 方法不是屬性，用 `Count()`
@@ -81,6 +81,38 @@ MCP-Server/             # Node.js MCP Server
 - `SavedItemCollection` 無 public 無參建構子
 - `SearchCondition` 只有 `EqualValue()` 可靠
 - Post-build 複製到 Program Files 需管理員權限
+
+## 實際踩過的坑（2026-10-20 驗證於 Navisworks Manage 2020）
+
+### 1. Newtonsoft.Json 版本衝突（2020 專屬）
+NW2020 主目錄內建 Newtonsoft.Json **6.0.0.0**（2025 版較新故無此問題），會先載入進程；
+外掛綁 13.0.0.0 時綁定失敗，症狀是 **WebSocket 連得上但命令永遠不回應**，
+日誌出現 `The located assembly's manifest definition does not match the assembly reference`。
+解法：`Core/AssemblyResolver.cs` 掛 `AppDomain.AssemblyResolve`，失敗時從外掛資料夾載入正確版本。
+註冊時機必須早於任何 Newtonsoft 型別被使用（已放在 `MCPEventWatcher.OnLoaded`）。
+
+### 2. 兩端 JSON 命名不一致（與 NW 版本無關，原始碼本身的錯）
+- 回應：C# 預設輸出 PascalCase，socket.ts 以 `response.requestId` 配對 → 配不到 handler，**每個命令逾時 30 秒**
+- 請求：socket.ts 曾用 `toPascalCase()` 轉換參數鍵，但 C# 以 `parameters["groupBy"]` 這類
+  camelCase 鍵查 `Dictionary`（大小寫敏感）→ **所有參數被靜默忽略、套用預設值**
+
+兩端一律使用 **camelCase**。改回應時用 `[JsonProperty]` 逐一標註，
+不要設全域 CamelCase 解析器 —— 後者會連 `Data` 內的字典鍵一併轉換，
+破壞 Navisworks 屬性名稱（如 `Source File`、`Element`）。
+
+### 3. 中文介面的屬性分類名是中文
+中文版 Navisworks 實測回傳：`元素`、`元素 ID`、`項目`、`專案`、`轉換`、`外部參考`、`TimeLiner`。
+`search_items` / `batch_get_properties` 的 `category` 要用中文，文件裡的 `Element`、`Item` 搜不到東西。
+
+### 4. 統計類工具有寫死的掃描上限
+`SafeDescendants(10000)`（`get_model_statistics`）、`SafeDescendants(5000)`
+（`get_override_status`、`get_hidden_items`）都沒開放參數調整，
+回傳的 `totalItems` / `totalScanned` 是截斷值，聯合模型下不具參考意義。
+
+### 5. 部署腳本編碼
+`.ps1` 含中文時必須存成 **UTF-8 with BOM**。PowerShell 5.1 讀無 BOM 檔案會當成
+ANSI（台灣為 cp950），中文被誤解後可能吃掉引號，報出與實際無關的
+`陳述式區塊或類型定義中缺少 '}'`。
 
 ## B001 模型結構
 
@@ -132,7 +164,7 @@ Micron MSI1 7A Bumping, 29 BOQ sheets
 dotnet build MCP/NavisworksMCP.csproj -c Release
 
 # Deploy (需管理員權限，NW 必須關閉)
-powershell -Command "Start-Process robocopy -Verb RunAs -Wait -ArgumentList 'C:\Users\Admin\DESKTOP\NV_mcp\MCP\bin\Release \"C:\Program Files\Autodesk\Navisworks Manage 2025\Plugins\NavisworksMCP\" NavisworksMCP.dll NavisworksMCP.pdb /IS /IT'"
+powershell -Command "Start-Process robocopy -Verb RunAs -Wait -ArgumentList 'C:\Users\Admin\DESKTOP\NV_mcp\MCP\bin\Release \"C:\Program Files\Autodesk\Navisworks Manage 2020\Plugins\NavisworksMCP\" NavisworksMCP.dll NavisworksMCP.pdb /IS /IT'"
 
 # MCP Server
 cd MCP-Server && npm run build
