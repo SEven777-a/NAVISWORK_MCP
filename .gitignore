@@ -16,3 +16,6 @@ MCP-Server/node_modules/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Dependencies（根目錄腳本用，以 npm install 還原）
+node_modules/
